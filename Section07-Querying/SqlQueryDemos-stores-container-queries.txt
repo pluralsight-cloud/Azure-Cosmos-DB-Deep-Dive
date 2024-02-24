@@ -1,0 +1,184 @@
+﻿-- *** Projections ***
+
+-- Get all documents (project all properties from all stores)
+SELECT * FROM c
+
+-- Project just the ID and store name properties
+SELECT c.id, c.name
+FROM c
+
+-- Project just the store name property
+SELECT c.name
+FROM c
+
+-- Project just the store name property as a string array using VALUE
+SELECT VALUE c.name
+FROM c
+
+-- Use string concatenation for a single value
+SELECT VALUE c.name || ', ' || c.address.countryRegionName
+FROM c
+
+-- Project entirely different shape using inline JSON
+SELECT
+  c.address.countryRegionName AS country,
+  {
+    "storeName": c.name,
+    "cityStateZip": [
+        c.address.location.city,
+        c.address.location.stateProvinceName
+    ],
+    "metadata": {
+        "internalId": c.id,
+        "timestamp": c._ts
+    }
+  } AS storeInfo
+FROM c
+
+-- *** Range queries ***
+
+-- Get A-K
+SELECT VALUE c.name
+FROM c
+WHERE c.name >= 'A' AND c.name <= 'K'
+
+-- Same thing using BETWEEN
+SELECT VALUE c.name
+FROM c
+WHERE c.name BETWEEN 'A' AND 'K'
+
+-- Get L-Z
+SELECT VALUE c.name
+FROM c
+WHERE c.name BETWEEN 'L' AND 'Z'
+
+-- *** ORDER BY ***
+
+-- Sort ascending and descending on any property
+-- Note that sorting on multiple properties is supported, but requires that you first
+-- create a custom composite index against the desired properties
+
+-- Sort ascending
+SELECT c.id, c.name
+FROM c
+ORDER BY c.name
+
+-- Sort descending
+SELECT c.id, c.name
+FROM c
+ORDER BY c.name DESC
+
+-- *** TOP and OFFSET...LIMIT ***
+
+-- Get the first page (TOP) or any page (OFFSET...LIMIT) of a sorted resultset.
+
+-- Limit results with TOP
+SELECT TOP 10 VALUE
+ c.name || ', ' || c.address.location.city || ', ' || c.address.location.stateProvinceName
+FROM c
+WHERE c.address.countryRegionName = 'United States'
+ORDER BY c.name
+
+-- Paged results with OFFSET...LIMIT 
+SELECT VALUE
+ c.name || ', ' || c.address.location.city || ', ' || c.address.location.stateProvinceName
+FROM c
+WHERE c.address.countryRegionName = 'United States'
+ORDER BY c.name
+OFFSET 10 LIMIT 10
+
+-- *** Subset filtering ***
+
+-- Get all city and state names
+SELECT
+ c.address.location.city,
+ c.address.location.stateProvinceName
+FROM c
+
+-- Simpler by reducing subset
+SELECT *
+FROM c.address.location
+
+-- Can't filter on subset without an alias
+SELECT *
+FROM c.address.location
+WHERE c.address.location.stateProvinceName = 'Florida'
+
+-- Alias the subset to filter within the subset
+SELECT *
+FROM c.address.location AS l
+WHERE l.stateProvinceName IN ('Florida', 'Illinois')
+
+-- *** Calculated Properties ***
+
+-- Boolean expression property (on = comparison)
+SELECT
+ c.name,
+ c.address.location.city,
+ c.address.location.stateProvinceName,
+ c.address.location.city = c.address.location.stateProvinceName AS isSameCityState
+FROM c
+ WHERE STARTSWITH(c.name, 'Onl') = true
+ ORDER BY c.address.location.stateProvinceName
+
+-- Ternary (?) operator
+SELECT
+ c.name,
+ c.address.countryRegionName AS region,
+ (c.address.countryRegionName = "United States" ? "USD" : "CAD" ) AS currency
+FROM c
+WHERE c.address.countryRegionName IN ("United States", "Canada")
+
+-- Nested ternary (?) operator
+SELECT
+ c.name,
+ c.address.countryRegionName AS region,
+ (c.address.countryRegionName = "United States" ? "USD" :
+  (c.address.countryRegionName = "Canada" ? "CAD" :
+   "EUR")) AS currency
+FROM c
+WHERE c.address.countryRegionName IN ("United States", "Canada", "France")
+
+-- *** Aggregation queries ***
+
+-- Entire container (cross-partition)
+SELECT
+    COUNT(c) AS TotalStoreCount
+FROM
+    c
+
+-- Entire container, grouped by country (cross-partition)
+SELECT
+    c.address.countryRegionName AS Country,
+    COUNT(c) AS StoreCount
+FROM
+    c
+GROUP BY
+    c.address.countryRegionName
+
+-- Country (cross-partition)
+SELECT 
+    COUNT(c) AS TotalUsStoreCount
+FROM
+    c
+WHERE
+    c.address.countryRegionName = 'United States'
+
+-- Country, grouped by state (cross-partition)
+SELECT
+    c.address.location.stateProvinceName AS State,
+    COUNT(c) AS StateStoreCount
+FROM
+    c
+WHERE
+    c.address.countryRegionName = 'United States'
+GROUP BY
+    c.address.location.stateProvinceName
+
+-- On zip-code (single-partition)
+SELECT 
+    COUNT(c) AS Zip14111Count
+FROM
+    c
+WHERE
+    c.address.postalCode = '14111'

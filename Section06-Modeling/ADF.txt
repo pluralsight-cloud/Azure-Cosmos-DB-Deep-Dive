@@ -1,0 +1,11 @@
+collect(
+	@(
+		OrderQty = OrderQty,
+		ProductID = ProductID,
+		UnitPrice = toDouble(UnitPrice),
+		UnitPriceDiscount = toDouble(UnitPriceDiscount),
+		LineTotal = toDouble(LineTotal)
+	)
+)
+
+in(['SubTotal','TaxAmt','Freight','TotalDue'], name)

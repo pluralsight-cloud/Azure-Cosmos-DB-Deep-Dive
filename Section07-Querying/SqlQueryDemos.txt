@@ -1,0 +1,722 @@
+﻿-------------------------------
+-- Scalar Expression Queries --
+-------------------------------
+
+-- *** Simple SELECT statement ***
+
+-- Results are returned as objects in an array with auto-assigned properties (e.g., $1, $2)
+SELECT "Hello"
+
+-- Use AS to override auto-assigned property names
+SELECT "Hello" AS word
+
+-- Use VALUE to return scalar values instead of objects
+SELECT VALUE "Hello"
+
+-- Return an object with two properties
+SELECT
+ "Hello" AS word1,
+ "World" AS word2
+
+-- *** Shaping nested arrays and embedded objects ***
+
+-- Use [ and ] characters to nest arrays
+SELECT
+[
+  "Hello",
+  "World"
+]
+ AS words
+
+-- Use { and } characters to embed objects
+SELECT
+{
+  "word1": "Hello",
+  "word2": "World"
+}
+ AS words
+
+-- Of course, you can combine nested  arrays and embedded objects
+SELECT
+{
+  "words1": ["Hello", "World"],
+  "words2": ["How", "Are", "You?"]
+}
+ AS allWords
+
+-- *** Arithmetic operators and functions ***
+
+-- Arithmetic operators
+SELECT
+ 8 * ((2 + 16) - 2) / 2 AS math1,
+ 8 * ((2 + 16) - 2) / 2.1 AS math2
+
+-- Math functions
+SELECT
+ ROUND(3.4) AS mathRound1,		ROUND(3.5) AS mathRound2,       -- round to the closest integer
+ CEILING(3.4) AS mathCeiling1,	CEILING(3.5) AS mathCeiling2,   -- smallest integer greater than or equal to
+ FLOOR(3.4) AS mathFloor1,		FLOOR(3.5) AS mathFloor2,       -- largest integer less than or equal to
+ TRUNC(2.4) AS mathTrunc1,		TRUNC(-2.8) AS mathTrunc2,      -- truncate to the closest integer
+ ABS(-5) AS mathAbs1,			ABS(5) AS mathAbs2,             -- absolute (positive) value
+ SIN(28) AS mathSin,            ASIN(-1) AS mathAsin,           -- sine & arcsine
+ COS(28) AS mathCos,            ACOS(-1) AS mathAcos,           -- cosine & arccosine
+ TAN(28) AS mathTan,            ATAN(-45.01) AS mathAtan,       -- tangent & arctangent
+ ATN2(35.1, 129.4) AS mathAtn2,                                 -- principal value of the arctangent of y/x, expressed in radians
+ COT(124.1332) AS mathCot,                                      -- trigonometric cotangent of the specified angle, in radians
+ DEGREES(1.57) AS mathDegrees,                                  -- angle in degrees for an angle specified in radians
+ EXP(1) AS mathExponential1,    EXP(10) AS mathExponential2,    -- exponential value (constant 2.718281... raised to the specified power)
+ LOG(16) AS mathLog,                                            -- natural logarithm
+ LOG10(100) AS mathB10Log,                                      -- base-10 logarithm
+ POWER(2, 3) AS mathPower1,                                     -- specified value raised to the specified power
+ RADIANS(-45.01) AS mathRadians,                                -- radians of the specified degrees value
+ RAND() AS mathRand,                                            -- randomly generated value from 0 to 1
+ SIGN(-2) AS mathSign1,         SIGN(0) AS mathSign2,           -- positive (+1), zero (0), or negative (-1) sign
+ SQUARE(3) AS mathSquare,                                       -- square
+ SQRT(9) AS mathSqrt,                                           -- square root
+ PI() AS mathPi                                                 -- constant value of PI
+
+-- Logical operators
+SELECT
+ ("hot" = "cold" AND "up" = "down" OR 1 = 1) AS logical1,
+ ("hot" = "cold" AND ("up" = "down" OR 1 = 1) ) AS logical2
+
+-- *** Bitwise operators ***
+
+-- Color flags:
+--			Pos	Dec		Hex		Binary
+--	Red		0	  1		  1		0000 0001
+--	Green	1	  2		  2		0000 0010
+--	Blue	2	  4		  4		0000 0100
+--	Yellow	3	  8		  8		0000 1000
+--	Cyan	4	 16		 10		0001 0000
+--	Purple	5	 32		 20		0010 0000
+--	Brown	6	 64		 40		0100 0000
+--	Black	7	128		 80		1000 0000
+
+SELECT
+ 0x09 | 0xC1 AS BitwiseOr,  --    0000 1001             yellow, red
+                            --  | 1100 0001             black, brown, red
+                            --  = 1100 1001 (201/0xC9)  black, brown, yellow, red
+
+ 0xC9 & 0xF0 AS BitwiseAnd, --    1100 1001             black, brown, yellow, red
+                            --  & 1111 0000             black, brown, purple, cyan
+                            --  = 1100 0000 (192/0xC0)  black, brown
+
+ ~ 0xC0 AS BitwiseNot,      --  ~ 1100 0000             black, brown
+                            --  = 0011 1111 (63/0x3F) red, green, blue, yellow, cyan, purple
+
+ 0xC9 ^ 0xF0 AS BitwiseXor  --    1100 1001             black, brown, yellow, red
+                            --  ^ 1111 0000             black, brown, purple, cyan
+                            --  = 0011 1001 (57/0x39)  purple, cyan, yellow, red
+
+
+-- Pack Max and Min (two 4-bit values in range 0-15) into MaxMin (a single 8-bit value in range 0-255) using shift-left
+SELECT
+ 0x0E AS theMax,                -- 1110             14  0E
+ 0x09 AS theMin,                -- 1001             9   09
+ (0x0E << 4) + 0x09 AS maxMin   -- 1110 1001        233 E9
+
+-- Unpack Max from the upper four bits using shift-right
+SELECT
+ 0xE9 >> 4 AS theMax    --      1110 1001   233 E9  >> 4
+                        --    = 0000 1110   14  0E
+
+-- Unpack Min from the lower four bits using bitwise AND
+SELECT
+ 0xE9 & 0x0F AS theMin  --   1110 1001      233 E9
+                        -- & 0000 1111      15  0F
+                        -- = 0000 1001      9   09
+
+-- *** Comparison, ternary, and coalesce operators ***
+
+-- Comparison and ternary operators
+SELECT
+ (2 > 3 ? "higher" : "lower or equal") AS ternary
+
+-- Coalesce operator
+SELECT
+ (undefined ?? undefined ?? "third") AS coalesce1,
+ (undefined ?? "second" ?? "third") AS coalesce2,
+ ("first" ?? undefined ?? "third") AS coalesce3
+     
+-- *** Type checking functions ***
+
+SELECT
+ IS_ARRAY(6) AS isArray1,		IS_ARRAY([6]) AS isArray2,
+ IS_BOOL(6) AS isBool1,			IS_BOOL(false) AS isBool2,
+ IS_NULL(6) AS isNull1,			IS_NULL(null) AS isNull2,
+ IS_OBJECT("hello") AS IsObj1,	IS_OBJECT({"word": "hello"}) AS isObj2
+
+-- *** String concatenation operator ***
+
+SELECT
+ "Hello" || " " || "World" AS stringConcat
+
+-- *** String functions ***
+
+SELECT
+ CONCAT('A', 'b', 'c', 'd')	AS strConcat,       CONTAINS('Abcdef', 'cde')	AS strContains,
+ STARTSWITH('Abcdef', 'Ab')	AS strStartsWith,   ENDSWITH('Abcdef', 'cdef')	AS strEndsWith,
+ INDEX_OF('Abcdef', 'de')	AS strIndexOf1,     INDEX_OF('Abcdef', 'df')	AS strIndexOf2,
+ LEFT('Abcdef', 3)			AS strLeft,         RIGHT('Abcdef', 3)			AS strRight,
+ LTRIM('  Abcdef  ')    	AS strLtrim,        RTRIM('  Abcdef')			AS strRtrim,
+ SUBSTRING('Abcdef', 2, 3)	AS strSubstring,    LENGTH('Abcdef')			AS strLength,
+ LOWER('Abcdef')			AS strLower,        UPPER('Abcdef')			    AS strUpper
+
+-- *** Regular expressions ***
+
+SELECT
+ REGEXMATCH('abcd', 'ABC', '')      AS strRegexNoModifiers, 
+ REGEXMATCH('abcd', 'ABC', 'i')     AS strRegexCaseInsensitive, 
+ REGEXMATCH('abcd', 'ab.', '')      AS strRegexWildcardCharacter,
+ REGEXMATCH('abcd', 'ab c', 'x')    AS strRegexIgnoreWhiteSpace, 
+ REGEXMATCH('abcd', 'aB c', 'ix')   AS strRegexCaseInsensitiveAndIgnoreWhiteSpace 
+
+-- *** StringToXxx functions ***
+
+SELECT 
+    StringToArray('[]') AS a1, 
+    StringToArray("[1,2,3]") AS a2,
+    StringToArray("[\"str\",2,3]") AS a3,
+    StringToArray('[["5","6","7"],["8"],["9"]]') AS a4,
+    StringToArray('[1,2,3, "[4,5,6]",[7,8]]') AS a5
+
+SELECT 
+    StringToObject("{}") AS obj1, 
+    StringToObject('{"A":[1,2,3]}') AS obj2,
+    StringToObject('{"B":[{"b1":[5,6,7]},{"b2":8},{"b3":9}]}') AS obj3, 
+    StringToObject("{\"C\":[{\"c1\":[5,6,7]},{\"c2\":8},{\"c3\":9}]}") AS obj4
+    
+SELECT 
+    StringToBoolean("true") AS b1, 
+    StringToBoolean("    false") AS b2,
+    StringToBoolean("false    ") AS b3
+
+SELECT 
+    StringToNull("null") AS n1, 
+    StringToNull("  null ") AS n2,
+    IS_NULL(StringToNull("null   ")) AS n3
+
+SELECT 
+    StringToNumber("1.000000") AS num1, 
+    StringToNumber("3.14") AS num2,
+    StringToNumber("   60   ") AS num3, 
+    StringToNumber("-1.79769e+308") AS num4
+
+SELECT 
+    ToString(1.0000) AS str1, 
+    ToString("Hello World") AS str2, 
+    ToString(NaN) AS str3, 
+    ToString(Infinity) AS str4,
+    ToString(IS_STRING(ToString(undefined))) AS str5, 
+    ToString(0.1234) AS str6, 
+    ToString(false) AS str7, 
+    ToString(undefined) AS str8
+    
+-- *** Date/time functions ***
+
+SELECT
+    DateTimeAdd('mm', 1, '2022-07-09T23:20:13.4575530Z')    AS addOneMonth,
+    DateTimeAdd('hh', -2, '2022-07-09T23:20:13.4575530Z')   AS subtractTwoHours,
+    DateTimeBin('2021-06-28T17:24:29.2991234Z', 'hour')     AS getBinByHour,
+    DateTimeDiff(
+        'day',
+        '2022-01-01T01:02:03.1234527Z',
+        '2022-01-03T01:02:03.1234567Z')                     AS differenceInDays,
+    DateTimeFromParts(2020, 9, 4)                           AS dateTimeFromParts1,
+    DateTimeFromParts(2020, 9, 4, 10, 52, 12, 3456789)      AS dateTimeFromParts2,
+    DateTimePart('month', '2022-04-02T03:04:05.6789123Z')   AS monthValue,
+    DateTimeToTicks('2022-07-09T03:04:05.6789123Z')         AS dateTime2Ticks,       -- tick = one hundred nanoseconds (one ten-millionth of a second)
+    DateTimeToTimestamp('2022-07-09T03:04:05.6789123Z')     AS dateTime2Timestamp,   -- UNIX epoch = number of milliseconds exlapsed since Jan 1, 1970
+    TicksToDateTime(16573358456789124)                      AS ticks2DateTime,
+    TimestampToDateTime(1657335845678)                      AS timestamp2DateTime,
+    GetCurrentDateTime()                                    AS currentUtcDateTime,
+    GetCurrentTicks()                                       AS currentUtcTicks,
+    GetCurrentTimestamp()                                   AS currentUtcTimestamp
+
+-- *** Array functions ***
+
+SELECT
+ ARRAY_CONCAT(["A", "B"], ["1", "2"], ["#"])	AS arrConcat,
+ ARRAY_CONTAINS(["1A", "1B", "1C"], "1B")		AS arrContains,
+ ARRAY_LENGTH(["1A", "1B", "1C"])				AS arrLength,
+ ARRAY_SLICE(["1A", "1B", "1C", "1D"], 1, 2)	AS arrSlice
+
+
+----------------------------------
+-- Container Queries (Families) --
+----------------------------------
+
+-- *** FROM clause ***
+
+-- Can just use 'c' for container
+SELECT * FROM c
+
+-- Get city and state
+SELECT
+ c.location.city,
+ c.location.state
+FROM c
+
+-- Can use container name
+SELECT
+ Families.location.city,
+ Families.location.state
+FROM Families
+
+-- Can "double"-alias
+SELECT
+ f.location.city,
+ f.location.state
+FROM Families AS f
+
+-- Reduce source to subset of children (per family)
+SELECT *
+FROM c.children
+ 
+-- With reduced source, can't query outside the subset
+SELECT *
+FROM c.children
+WHERE c.location.state = 'NY'
+  
+-- All queryable properties need to be in scope
+SELECT c.children
+FROM c
+WHERE c.location.state = 'NY'
+
+-- *** FROM with IN ***
+
+-- Use IN to break each item into multiple documents on a child array
+
+-- Break each family into multiple documents on children array elements
+SELECT *
+FROM ch IN c.children
+
+-- Produce a consistent shape
+SELECT
+ ch.firstName,
+ ch.givenName,
+ ch.grade,
+ ARRAY_LENGTH(ch.pets) AS numberOfPets,
+ ch.pets
+FROM
+ ch IN c.children
+
+-- Resolve schema differences
+SELECT
+ ch.givenName ?? ch.firstName AS childName,
+ ch.grade,
+ ARRAY_LENGTH(ch.pets) ?? 0 AS numberOfPets,
+ ch.pets ?? [] AS pets
+FROM
+ ch IN c.children
+
+-- *** FROM with JOIN ***
+
+-- Use JOIN to perform an "intra-document" join between a parent object and child array
+-- This works similar to IN, but also keeps parent properties in scope, similar to an INNER JOIN in regular SQL
+
+-- JOIN duplicates parent-level info for each child (create a cross-product of families by children)
+SELECT
+ f.id,
+ f.location.city,
+ f.location.state,
+ ch.givenName ?? ch.firstName AS childName,
+ ARRAY_LENGTH(ch.pets) ?? 0 AS numberOfPets,
+ ch.pets
+FROM c AS f
+JOIN ch IN f.children
+
+-- Double JOIN for a cross-product of families, children, and pets
+SELECT
+ f.id,
+ ch.givenName ?? ch.firstName AS childName,
+ p.givenName AS petName,
+ p.type
+FROM c AS f
+JOIN ch IN f.children
+JOIN p IN ch.pets
+
+-- ...except cats
+SELECT
+ f.id,
+ ch.givenName ?? ch.firstName AS childName,
+ p.givenName AS petName,
+ p.type
+FROM c AS f
+JOIN ch IN f.children
+JOIN p IN ch.pets
+WHERE p.type != 'Cat'
+
+-- ...except cats, using correlated subquery (filters for non-cats before the join, instead of first joining and then filtering for non-cats)
+SELECT
+ f.id,
+ ch.givenName ?? ch.firstName AS childName,
+ p.givenName AS petName,
+ p.type
+FROM c AS f
+JOIN ch IN f.children
+JOIN (SELECT VALUE p FROM p in ch.pets WHERE p.type != 'Cat') AS p
+
+-- Retrieve all pet names
+SELECT p.givenName 
+FROM c AS f
+JOIN ch IN f.children 
+JOIN p IN ch.pets
+
+-- Retrieve all pet names (use VALUE for simple string array)
+SELECT VALUE p.givenName 
+FROM c AS f
+JOIN ch IN f.children 
+JOIN p IN ch.pets
+
+-- *** Aggregation queries ***
+
+-- Total families
+SELECT VALUE COUNT(c)
+FROM c
+
+-- Total families per state
+SELECT
+ c.location.state AS State,
+ COUNT(c) AS FamilyCount
+FROM
+ c
+GROUP BY
+ c.location.state
+ 
+-- Lowest grade
+SELECT VALUE MIN(ch.grade)
+FROM ch IN c.children
+
+-- Highest grade
+SELECT VALUE MAX(ch.grade)
+FROM ch IN c.children
+
+-- Average grade
+SELECT VALUE AVG(ch.grade)
+FROM ch IN c.children
+
+-- Fewest children
+SELECT VALUE MIN(ARRAY_LENGTH(c.children))
+FROM c
+
+-- Most children
+SELECT VALUE MAX(ARRAY_LENGTH(c.children))
+FROM c
+
+-- Total children
+SELECT VALUE SUM(ARRAY_LENGTH(c.children))
+FROM c
+
+-- Total pets
+SELECT VALUE SUM(ARRAY_LENGTH(ch.pets))
+FROM ch IN c.children
+
+-- Aggregates for NY children
+SELECT
+ COUNT(ch) AS NyKidsCount,
+ MIN(ch.grade) AS NyMinGrade,
+ MAX(ch.grade) AS NyMaxGrade,
+ SUM(ARRAY_LENGTH(ch.pets)) AS NyPetsCount
+FROM c JOIN ch IN c.children
+WHERE c.location.state = 'NY'
+
+-- Aggregates for WA children
+SELECT
+ COUNT(ch) AS WaKidsCount,
+ MIN(ch.grade) AS WaMinGrade,
+ MAX(ch.grade) AS WaMaxGrade,
+ SUM(ARRAY_LENGTH(ch.pets)) AS WaPetsCount
+FROM c JOIN ch IN c.children
+WHERE c.location.state = 'WA'
+
+-- Aggregates for all children
+SELECT
+ c.location.state AS State,
+ COUNT(ch) AS KidsCount,
+ MIN(ch.grade) AS MinGrade,
+ MAX(ch.grade) AS MaxGrade,
+ SUM(ARRAY_LENGTH(ch.pets)) AS PetsCount
+FROM c JOIN ch IN c.children
+GROUP BY c.location.state
+
+-- *** Spatial queries ***
+
+SELECT
+ c.id || ', ' || c.location.city || ' (' || c.location.county || '), ' || c.location.state AS family,
+ c.geo
+FROM c
+
+SELECT
+ c.id || ', ' || c.location.city || ' (' || c.location.county || '), ' || c.location.state AS family,
+ ST_DISTANCE(c.geo, 
+  {
+   'type': 'Point',
+   'coordinates': [-73.992, 40.73104]
+  }
+ ) AS MetersFromNyc
+FROM c
+
+SELECT
+ c.id || ', ' || c.location.city || ' (' || c.location.county || '), ' || c.location.state AS family,
+ ST_DISTANCE(c.geo,
+  {
+   'type': 'Point',
+   'coordinates': [-73.992, 40.73104]
+  }
+ ) / 1000 AS KmFromNyc
+FROM c
+
+SELECT
+ c.id || ', ' || c.location.city || ' (' || c.location.county || '), ' || c.location.state AS family,
+ ST_DISTANCE(c.geo,
+  {
+   'type': 'Point',
+   'coordinates': [-73.992, 40.73104]
+  }
+ ) / 1000 * .62137119
+ AS MilesFromNyc
+FROM c
+
+SELECT VALUE
+ c.id || ', ' || c.location.city || ' (' || c.location.county || '), ' || c.location.state
+FROM c
+WHERE
+ ST_DISTANCE(c.geo,
+  {
+   'type': 'Point',
+   'coordinates':
+     [-73.992, 40.73104]
+  }
+ ) / 1000 * .62137119 <= 8
+
+-- Get families in Manhattan
+SELECT VALUE c.id || ', ' || c.location.city || ' (' || c.location.county || '), ' || c.location.state FROM c
+WHERE
+ ST_INTERSECTS(c.geo, {
+   'type': 'Polygon',
+   'coordinates': [ [
+     [ -74.01326, 40.7003  ], [ -73.99884, 40.70875 ], [ -73.97893, 40.71129 ], [ -73.97121, 40.72697 ],
+     [ -73.97387, 40.73477 ], [ -73.97142, 40.74401 ], [ -73.94205, 40.77606 ], [ -73.94414, 40.78217 ],
+     [ -73.9396 , 40.78535 ], [ -73.93622, 40.79111 ], [ -73.92938, 40.79567 ], [ -73.92905, 40.80088 ],
+     [ -73.93481, 40.80926 ], [ -73.934  , 40.81644 ], [ -73.93531, 40.83477 ], [ -73.92764, 40.84868 ],
+     [ -73.92286, 40.85595 ], [ -73.91137, 40.86855 ], [ -73.91035, 40.87121 ], [ -73.91198, 40.87332 ],
+     [ -73.91451, 40.87431 ], [ -73.92838, 40.86712 ], [ -73.9337 , 40.85868 ], [ -73.94451, 40.84999 ],
+     [ -73.94494, 40.84232 ], [ -74.00786, 40.75435 ], [ -74.01069, 40.72892 ], [ -74.0185 , 40.70381 ],
+     [ -74.01326, 40.7003  ]
+   ] ]
+  }) = true
+
+SELECT
+ ST_ISVALID(
+  {
+   'type': 'Point',
+   'coordinates': [-122.3295, 47.60357]
+  }
+ ) AS IsValidSpatial
+
+SELECT
+ ST_ISVALID(
+  {
+   'type': 'Point',
+   'coordinates': [47.60357, -122.3295]
+  }
+ ) AS IsValidSpatial
+
+SELECT
+ ST_ISVALIDDETAILED(
+  {
+   'type': 'Point',
+   'coordinates': [47.60357, -122.3295]
+  }
+ ) AS IsValidSpatial
+
+--------------------------------
+-- Container Queries (Stores) --
+--------------------------------
+
+-- *** Projections ***
+
+-- Get all documents (project all properties from all stores)
+SELECT * FROM c
+
+-- Project just the ID and store name properties
+SELECT c.id, c.name
+FROM c
+
+-- Project just the store name property
+SELECT c.name
+FROM c
+
+-- Project just the store name property as a string array using VALUE
+SELECT VALUE c.name
+FROM c
+
+-- Use string concatenation for a single value
+SELECT VALUE c.name || ', ' || c.address.countryRegionName
+FROM c
+
+-- Project entirely different shape using inline JSON
+SELECT
+  c.address.countryRegionName AS country,
+  {
+    "storeName": c.name,
+    "cityStateZip": [
+        c.address.location.city,
+        c.address.location.stateProvinceName
+    ],
+    "metadata": {
+        "internalId": c.id,
+        "timestamp": c._ts
+    }
+  } AS storeInfo
+FROM c
+
+-- *** Range queries ***
+
+-- Get A-K
+SELECT VALUE c.name
+FROM c
+WHERE c.name >= 'A' AND c.name <= 'K'
+
+-- Same thing using BETWEEN
+SELECT VALUE c.name
+FROM c
+WHERE c.name BETWEEN 'A' AND 'K'
+
+-- Get L-Z
+SELECT VALUE c.name
+FROM c
+WHERE c.name BETWEEN 'L' AND 'Z'
+
+-- *** ORDER BY ***
+
+-- Sort ascending and descending on any property
+-- Note that sorting on multiple properties is supported, but requires that you first
+-- create a custom composite index against the desired properties
+
+-- Sort ascending
+SELECT c.id, c.name
+FROM c
+ORDER BY c.name
+
+-- Sort descending
+SELECT c.id, c.name
+FROM c
+ORDER BY c.name DESC
+
+-- *** TOP and OFFSET...LIMIT ***
+
+-- Get the first page (TOP) or any page (OFFSET...LIMIT) of a sorted resultset.
+
+-- Limit results with TOP
+SELECT TOP 10 VALUE
+ c.name || ', ' || c.address.location.city || ', ' || c.address.location.stateProvinceName
+FROM c
+WHERE c.address.countryRegionName = 'United States'
+ORDER BY c.name
+
+-- Paged results with OFFSET...LIMIT 
+SELECT VALUE
+ c.name || ', ' || c.address.location.city || ', ' || c.address.location.stateProvinceName
+FROM c
+WHERE c.address.countryRegionName = 'United States'
+ORDER BY c.name
+OFFSET 10 LIMIT 10
+
+-- *** Subset filtering ***
+
+-- Get all city and state names
+SELECT
+ c.address.location.city,
+ c.address.location.stateProvinceName
+FROM c
+
+-- Simpler by reducing subset
+SELECT *
+FROM c.address.location
+
+-- Can't filter on subset without an alias
+SELECT *
+FROM c.address.location
+WHERE c.address.location.stateProvinceName = 'Florida'
+
+-- Alias the subset to filter within the subset
+SELECT *
+FROM c.address.location AS l
+WHERE l.stateProvinceName IN ('Florida', 'Illinois')
+
+-- *** Calculated Properties ***
+
+-- Boolean expression property (on = comparison)
+SELECT
+ c.name,
+ c.address.location.city,
+ c.address.location.stateProvinceName,
+ c.address.location.city = c.address.location.stateProvinceName AS isSameCityState
+FROM c
+ WHERE STARTSWITH(c.name, 'Onl') = true
+ ORDER BY c.address.location.stateProvinceName
+
+-- Ternary (?) operator
+SELECT
+ c.name,
+ c.address.countryRegionName AS region,
+ (c.address.countryRegionName = "United States" ? "USD" : "CAD" ) AS currency
+FROM c
+WHERE c.address.countryRegionName IN ("United States", "Canada")
+
+-- Nested ternary (?) operator
+SELECT
+ c.name,
+ c.address.countryRegionName AS region,
+ (c.address.countryRegionName = "United States" ? "USD" :
+  (c.address.countryRegionName = "Canada" ? "CAD" :
+   "EUR")) AS currency
+FROM c
+WHERE c.address.countryRegionName IN ("United States", "Canada", "France")
+
+-- *** Aggregation queries ***
+
+-- Entire container (cross-partition)
+SELECT
+    COUNT(c) AS TotalStoreCount
+FROM
+    c
+
+-- Entire container, grouped by country (cross-partition)
+SELECT
+    c.address.countryRegionName AS Country,
+    COUNT(c) AS StoreCount
+FROM
+    c
+GROUP BY
+    c.address.countryRegionName
+
+-- Country (cross-partition)
+SELECT 
+    COUNT(c) AS TotalUsStoreCount
+FROM
+    c
+WHERE
+    c.address.countryRegionName = 'United States'
+
+-- Country, grouped by state (cross-partition)
+SELECT
+    c.address.location.stateProvinceName AS State,
+    COUNT(c) AS StateStoreCount
+FROM
+    c
+WHERE
+    c.address.countryRegionName = 'United States'
+GROUP BY
+    c.address.location.stateProvinceName
+
+-- On zip-code (single-partition)
+SELECT 
+    COUNT(c) AS Zip14111Count
+FROM
+    c
+WHERE
+    c.address.postalCode = '14111'

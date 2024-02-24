@@ -1,0 +1,24 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"resources": [
+		{
+			"type": "Microsoft.DocumentDB/databaseAccounts",
+			"apiVersion": "2021-05-15",
+			"name": "[concat('csmsarm', uniqueString(resourceGroup().id))]",
+			"location": "[resourceGroup().location]",
+			"properties": {
+				"databaseAccountOfferType": "Standard",
+				"locations": [
+					{
+						"locationName": "westeurope"
+					},
+					{
+						"locationName": "eastus2"
+					}
+				],
+				"enableMultipleWriteLocations": true
+			}
+		}
+	]
+}

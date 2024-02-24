@@ -1,0 +1,40 @@
+﻿# Connect to your directory
+Connect-AzAccount -TenantId [TENANT-ID]
+
+# Set the subscription
+Set-AzContext -SubscriptionName "[SUBSCRIPTION-NAME]"
+
+# View role definitions
+Get-AzCosmosDBSqlRoleDefinition `
+    -ResourceGroupName cosmos-acg-course-rg `
+    -AccountName cosmos-acg-course
+
+# View role assignments
+Get-AzCosmosDBSqlRoleAssignment `
+    -ResourceGroupName cosmos-acg-course-rg `
+    -AccountName cosmos-acg-course
+   
+# Create role definition for the ingest-only application
+New-AzCosmosDBSqlRoleDefinition `
+    -ResourceGroupName cosmos-acg-course-rg `
+    -AccountName cosmos-acg-course `
+    -Type CustomRole `
+    -RoleName CosmosIngestOnlyRole `
+    -DataAction @( `
+        'Microsoft.DocumentDB/databaseAccounts/readMetadata', `
+        'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers/items/create') `
+    -AssignableScope "/dbs/iot-demo"
+
+# Assign the ingest-only role definition to the principal ID of the ingest-only app registration
+New-AzCosmosDBSqlRoleAssignment `
+    -ResourceGroupName cosmos-acg-course-rg `
+    -AccountName cosmos-acg-course `
+    -RoleDefinitionName CosmosIngestOnlyRole `
+    -Scope "/dbs/iot-demo/colls/iot" `
+    -PrincipalId [PRINCIPAL-ID]
+
+# Delete role definition with assignments
+Remove-AzCosmosDBSqlRoleDefinition `
+    -ResourceGroupName cosmos-acg-course-rg `
+    -AccountName cosmos-acg-course `
+    -Id [ROLE-DEFINITION-ID]

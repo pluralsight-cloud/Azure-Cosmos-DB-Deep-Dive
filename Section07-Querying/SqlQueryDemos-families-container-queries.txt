@@ -1,0 +1,284 @@
+﻿-- *** FROM clause ***
+
+-- Can just use 'c' for container
+SELECT * FROM c
+
+-- Get city and state
+SELECT
+ c.location.city,
+ c.location.state
+FROM c
+
+-- Can use container name
+SELECT
+ Families.location.city,
+ Families.location.state
+FROM Families
+
+-- Can "double"-alias
+SELECT
+ f.location.city,
+ f.location.state
+FROM Families AS f
+
+-- Reduce source to subset of children (per family)
+SELECT *
+FROM c.children
+ 
+-- With reduced source, can't query outside the subset
+SELECT *
+FROM c.children
+WHERE c.location.state = 'NY'
+  
+-- All queryable properties need to be in scope
+SELECT c.children
+FROM c
+WHERE c.location.state = 'NY'
+
+-- *** FROM with IN ***
+
+-- Use IN to break each item into multiple documents on a child array
+
+-- Break each family into multiple documents on children array elements
+SELECT *
+FROM ch IN c.children
+
+-- Produce a consistent shape
+SELECT
+ ch.firstName,
+ ch.givenName,
+ ch.grade,
+ ARRAY_LENGTH(ch.pets) AS numberOfPets,
+ ch.pets
+FROM
+ ch IN c.children
+
+-- Resolve schema differences
+SELECT
+ ch.givenName ?? ch.firstName AS childName,
+ ch.grade,
+ ARRAY_LENGTH(ch.pets) ?? 0 AS numberOfPets,
+ ch.pets ?? [] AS pets
+FROM
+ ch IN c.children
+
+-- *** FROM with JOIN ***
+
+-- Use JOIN to perform an "intra-document" join between a parent object and child array
+-- This works similar to IN, but also keeps parent properties in scope, similar to an INNER JOIN in regular SQL
+
+-- JOIN duplicates parent-level info for each child (create a cross-product of families by children)
+SELECT
+ f.id,
+ f.location.city,
+ f.location.state,
+ ch.givenName ?? ch.firstName AS childName,
+ ARRAY_LENGTH(ch.pets) ?? 0 AS numberOfPets,
+ ch.pets
+FROM c AS f
+JOIN ch IN f.children
+
+-- Double JOIN for a cross-product of families, children, and pets
+SELECT
+ f.id,
+ ch.givenName ?? ch.firstName AS childName,
+ p.givenName AS petName,
+ p.type
+FROM c AS f
+JOIN ch IN f.children
+JOIN p IN ch.pets
+
+-- ...except cats
+SELECT
+ f.id,
+ ch.givenName ?? ch.firstName AS childName,
+ p.givenName AS petName,
+ p.type
+FROM c AS f
+JOIN ch IN f.children
+JOIN p IN ch.pets
+WHERE p.type != 'Cat'
+
+-- ...except cats, using correlated subquery (filters for non-cats before the join, instead of first joining and then filtering for non-cats)
+SELECT
+ f.id,
+ ch.givenName ?? ch.firstName AS childName,
+ p.givenName AS petName,
+ p.type
+FROM c AS f
+JOIN ch IN f.children
+JOIN (SELECT VALUE p FROM p in ch.pets WHERE p.type != 'Cat') AS p
+
+-- Retrieve all pet names
+SELECT p.givenName 
+FROM c AS f
+JOIN ch IN f.children 
+JOIN p IN ch.pets
+
+-- Retrieve all pet names (use VALUE for simple string array)
+SELECT VALUE p.givenName 
+FROM c AS f
+JOIN ch IN f.children 
+JOIN p IN ch.pets
+
+-- *** Aggregation queries ***
+
+-- Total families
+SELECT VALUE COUNT(c)
+FROM c
+
+-- Total families per state
+SELECT
+ c.location.state AS State,
+ COUNT(c) AS FamilyCount
+FROM
+ c
+GROUP BY
+ c.location.state
+ 
+-- Lowest grade
+SELECT VALUE MIN(ch.grade)
+FROM ch IN c.children
+
+-- Highest grade
+SELECT VALUE MAX(ch.grade)
+FROM ch IN c.children
+
+-- Average grade
+SELECT VALUE AVG(ch.grade)
+FROM ch IN c.children
+
+-- Fewest children
+SELECT VALUE MIN(ARRAY_LENGTH(c.children))
+FROM c
+
+-- Most children
+SELECT VALUE MAX(ARRAY_LENGTH(c.children))
+FROM c
+
+-- Total children
+SELECT VALUE SUM(ARRAY_LENGTH(c.children))
+FROM c
+
+-- Total pets
+SELECT VALUE SUM(ARRAY_LENGTH(ch.pets))
+FROM ch IN c.children
+
+-- Aggregates for NY children
+SELECT
+ COUNT(ch) AS NyKidsCount,
+ MIN(ch.grade) AS NyMinGrade,
+ MAX(ch.grade) AS NyMaxGrade,
+ SUM(ARRAY_LENGTH(ch.pets)) AS NyPetsCount
+FROM c JOIN ch IN c.children
+WHERE c.location.state = 'NY'
+
+-- Aggregates for WA children
+SELECT
+ COUNT(ch) AS WaKidsCount,
+ MIN(ch.grade) AS WaMinGrade,
+ MAX(ch.grade) AS WaMaxGrade,
+ SUM(ARRAY_LENGTH(ch.pets)) AS WaPetsCount
+FROM c JOIN ch IN c.children
+WHERE c.location.state = 'WA'
+
+-- Aggregates for all children
+SELECT
+ c.location.state AS State,
+ COUNT(ch) AS KidsCount,
+ MIN(ch.grade) AS MinGrade,
+ MAX(ch.grade) AS MaxGrade,
+ SUM(ARRAY_LENGTH(ch.pets)) AS PetsCount
+FROM c JOIN ch IN c.children
+GROUP BY c.location.state
+
+-- *** Spatial queries ***
+
+SELECT
+ c.id || ', ' || c.location.city || ' (' || c.location.county || '), ' || c.location.state AS family,
+ c.geo
+FROM c
+
+SELECT
+ c.id || ', ' || c.location.city || ' (' || c.location.county || '), ' || c.location.state AS family,
+ ST_DISTANCE(c.geo, 
+  {
+   'type': 'Point',
+   'coordinates': [-73.992, 40.73104]
+  }
+ ) AS MetersFromNyc
+FROM c
+
+SELECT
+ c.id || ', ' || c.location.city || ' (' || c.location.county || '), ' || c.location.state AS family,
+ ST_DISTANCE(c.geo,
+  {
+   'type': 'Point',
+   'coordinates': [-73.992, 40.73104]
+  }
+ ) / 1000 AS KmFromNyc
+FROM c
+
+SELECT
+ c.id || ', ' || c.location.city || ' (' || c.location.county || '), ' || c.location.state AS family,
+ ST_DISTANCE(c.geo,
+  {
+   'type': 'Point',
+   'coordinates': [-73.992, 40.73104]
+  }
+ ) / 1000 * .62137119
+ AS MilesFromNyc
+FROM c
+
+SELECT VALUE
+ c.id || ', ' || c.location.city || ' (' || c.location.county || '), ' || c.location.state
+FROM c
+WHERE
+ ST_DISTANCE(c.geo,
+  {
+   'type': 'Point',
+   'coordinates':
+     [-73.992, 40.73104]
+  }
+ ) / 1000 * .62137119 <= 8
+
+-- Get families in Manhattan
+SELECT VALUE c.id || ', ' || c.location.city || ' (' || c.location.county || '), ' || c.location.state FROM c
+WHERE
+ ST_INTERSECTS(c.geo, {
+   'type': 'Polygon',
+   'coordinates': [ [
+     [ -74.01326, 40.7003  ], [ -73.99884, 40.70875 ], [ -73.97893, 40.71129 ], [ -73.97121, 40.72697 ],
+     [ -73.97387, 40.73477 ], [ -73.97142, 40.74401 ], [ -73.94205, 40.77606 ], [ -73.94414, 40.78217 ],
+     [ -73.9396 , 40.78535 ], [ -73.93622, 40.79111 ], [ -73.92938, 40.79567 ], [ -73.92905, 40.80088 ],
+     [ -73.93481, 40.80926 ], [ -73.934  , 40.81644 ], [ -73.93531, 40.83477 ], [ -73.92764, 40.84868 ],
+     [ -73.92286, 40.85595 ], [ -73.91137, 40.86855 ], [ -73.91035, 40.87121 ], [ -73.91198, 40.87332 ],
+     [ -73.91451, 40.87431 ], [ -73.92838, 40.86712 ], [ -73.9337 , 40.85868 ], [ -73.94451, 40.84999 ],
+     [ -73.94494, 40.84232 ], [ -74.00786, 40.75435 ], [ -74.01069, 40.72892 ], [ -74.0185 , 40.70381 ],
+     [ -74.01326, 40.7003  ]
+   ] ]
+  }) = true
+
+SELECT
+ ST_ISVALID(
+  {
+   'type': 'Point',
+   'coordinates': [-122.3295, 47.60357]
+  }
+ ) AS IsValidSpatial
+
+SELECT
+ ST_ISVALID(
+  {
+   'type': 'Point',
+   'coordinates': [47.60357, -122.3295]
+  }
+ ) AS IsValidSpatial
+
+SELECT
+ ST_ISVALIDDETAILED(
+  {
+   'type': 'Point',
+   'coordinates': [47.60357, -122.3295]
+  }
+ ) AS IsValidSpatial

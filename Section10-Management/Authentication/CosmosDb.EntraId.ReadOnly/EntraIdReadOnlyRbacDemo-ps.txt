@@ -1,0 +1,42 @@
+﻿# Connect to your directory
+Connect-AzAccount -TenantId [TENANT-ID]
+
+# Set the subscription
+Set-AzContext -SubscriptionName "[SUBSCRIPTION-NAME]"
+
+# View role definitions
+Get-AzCosmosDBSqlRoleDefinition `
+    -ResourceGroupName cosmos-acg-course-rg `
+    -AccountName cosmos-acg-course
+
+# View role assignments
+Get-AzCosmosDBSqlRoleAssignment `
+    -ResourceGroupName cosmos-acg-course-rg `
+    -AccountName cosmos-acg-course
+   
+# Create role definition for the read-only application
+New-AzCosmosDBSqlRoleDefinition `
+    -ResourceGroupName cosmos-acg-course-rg `
+    -AccountName cosmos-acg-course `
+    -Type CustomRole `
+    -RoleName CosmosReadOnlyRole `
+    -DataAction @( `
+        'Microsoft.DocumentDB/databaseAccounts/readMetadata', `
+        'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers/items/read', `
+        'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers/executeQuery', `
+        'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers/readChangeFeed') `
+    -AssignableScope "/dbs/iot-demo"
+
+# Assign the read-only role definition to the principal ID of the read-only app registration
+New-AzCosmosDBSqlRoleAssignment `
+    -ResourceGroupName cosmos-acg-course-rg `
+    -AccountName cosmos-acg-course `
+    -RoleDefinitionName CosmosReadOnlyRole `
+    -Scope "/dbs/iot-demo/colls/iot" `
+    -PrincipalId [PRINCIPAL-ID]
+
+# Delete role definition with assignments
+Remove-AzCosmosDBSqlRoleDefinition `
+    -ResourceGroupName cosmos-acg-course-rg `
+    -AccountName cosmos-acg-course `
+    -Id [ROLE-DEFINITION-ID]

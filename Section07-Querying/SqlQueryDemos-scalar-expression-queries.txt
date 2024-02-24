@@ -1,0 +1,239 @@
+﻿-- *** Simple SELECT statement ***
+
+-- Results are returned as objects in an array with auto-assigned properties (e.g., $1, $2)
+SELECT "Hello"
+
+-- Use AS to override auto-assigned property names
+SELECT "Hello" AS word
+
+-- Use VALUE to return scalar values instead of objects
+SELECT VALUE "Hello"
+
+-- Return an object with two properties
+SELECT
+ "Hello" AS word1,
+ "World" AS word2
+
+-- *** Shaping nested arrays and embedded objects ***
+
+-- Use [ and ] characters to nest arrays
+SELECT
+[
+  "Hello",
+  "World"
+]
+ AS words
+
+-- Use { and } characters to embed objects
+SELECT
+{
+  "word1": "Hello",
+  "word2": "World"
+}
+ AS words
+
+-- Of course, you can combine nested  arrays and embedded objects
+SELECT
+{
+  "words1": ["Hello", "World"],
+  "words2": ["How", "Are", "You?"]
+}
+ AS allWords
+
+-- *** Arithmetic operators and functions ***
+
+-- Arithmetic operators
+SELECT
+ 8 * ((2 + 16) - 2) / 2 AS math1,
+ 8 * ((2 + 16) - 2) / 2.1 AS math2
+
+-- Math functions
+SELECT
+ ROUND(3.4) AS mathRound1,		ROUND(3.5) AS mathRound2,       -- round to the closest integer
+ CEILING(3.4) AS mathCeiling1,	CEILING(3.5) AS mathCeiling2,   -- smallest integer greater than or equal to
+ FLOOR(3.4) AS mathFloor1,		FLOOR(3.5) AS mathFloor2,       -- largest integer less than or equal to
+ TRUNC(2.4) AS mathTrunc1,		TRUNC(-2.8) AS mathTrunc2,      -- truncate to the closest integer
+ ABS(-5) AS mathAbs1,			ABS(5) AS mathAbs2,             -- absolute (positive) value
+ SIN(28) AS mathSin,            ASIN(-1) AS mathAsin,           -- sine & arcsine
+ COS(28) AS mathCos,            ACOS(-1) AS mathAcos,           -- cosine & arccosine
+ TAN(28) AS mathTan,            ATAN(-45.01) AS mathAtan,       -- tangent & arctangent
+ ATN2(35.1, 129.4) AS mathAtn2,                                 -- principal value of the arctangent of y/x, expressed in radians
+ COT(124.1332) AS mathCot,                                      -- trigonometric cotangent of the specified angle, in radians
+ DEGREES(1.57) AS mathDegrees,                                  -- angle in degrees for an angle specified in radians
+ EXP(1) AS mathExponential1,    EXP(10) AS mathExponential2,    -- exponential value (constant 2.718281... raised to the specified power)
+ LOG(16) AS mathLog,                                            -- natural logarithm
+ LOG10(100) AS mathB10Log,                                      -- base-10 logarithm
+ POWER(2, 3) AS mathPower1,                                     -- specified value raised to the specified power
+ RADIANS(-45.01) AS mathRadians,                                -- radians of the specified degrees value
+ RAND() AS mathRand,                                            -- randomly generated value from 0 to 1
+ SIGN(-2) AS mathSign1,         SIGN(0) AS mathSign2,           -- positive (+1), zero (0), or negative (-1) sign
+ SQUARE(3) AS mathSquare,                                       -- square
+ SQRT(9) AS mathSqrt,                                           -- square root
+ PI() AS mathPi                                                 -- constant value of PI
+
+-- Logical operators
+SELECT
+ ("hot" = "cold" AND "up" = "down" OR 1 = 1) AS logical1,
+ ("hot" = "cold" AND ("up" = "down" OR 1 = 1) ) AS logical2
+
+-- *** Bitwise operators ***
+
+-- Color flags:
+--			Pos	Dec		Hex		Binary
+--	Red		0	  1		  1		0000 0001
+--	Green	1	  2		  2		0000 0010
+--	Blue	2	  4		  4		0000 0100
+--	Yellow	3	  8		  8		0000 1000
+--	Cyan	4	 16		 10		0001 0000
+--	Purple	5	 32		 20		0010 0000
+--	Brown	6	 64		 40		0100 0000
+--	Black	7	128		 80		1000 0000
+
+SELECT
+ 0x09 | 0xC1 AS BitwiseOr,  --    0000 1001             yellow, red
+                            --  | 1100 0001             black, brown, red
+                            --  = 1100 1001 (201/0xC9)  black, brown, yellow, red
+
+ 0xC9 & 0xF0 AS BitwiseAnd, --    1100 1001             black, brown, yellow, red
+                            --  & 1111 0000             black, brown, purple, cyan
+                            --  = 1100 0000 (192/0xC0)  black, brown
+
+ ~ 0xC0 AS BitwiseNot,      --  ~ 1100 0000             black, brown
+                            --  = 0011 1111 (63/0x3F) red, green, blue, yellow, cyan, purple
+
+ 0xC9 ^ 0xF0 AS BitwiseXor  --    1100 1001             black, brown, yellow, red
+                            --  ^ 1111 0000             black, brown, purple, cyan
+                            --  = 0011 1001 (57/0x39)  purple, cyan, yellow, red
+
+
+-- Pack Max and Min (two 4-bit values in range 0-15) into MaxMin (a single 8-bit value in range 0-255) using shift-left
+SELECT
+ 0x0E AS theMax,                -- 1110             14  0E
+ 0x09 AS theMin,                -- 1001             9   09
+ (0x0E << 4) + 0x09 AS maxMin   -- 1110 1001        233 E9
+
+-- Unpack Max from the upper four bits using shift-right
+SELECT
+ 0xE9 >> 4 AS theMax    --      1110 1001   233 E9  >> 4
+                        --    = 0000 1110   14  0E
+
+-- Unpack Min from the lower four bits using bitwise AND
+SELECT
+ 0xE9 & 0x0F AS theMin  --   1110 1001      233 E9
+                        -- & 0000 1111      15  0F
+                        -- = 0000 1001      9   09
+
+-- *** Comparison, ternary, and coalesce operators ***
+
+-- Comparison and ternary operators
+SELECT
+ (2 > 3 ? "higher" : "lower or equal") AS ternary
+
+-- Coalesce operator
+SELECT
+ (undefined ?? undefined ?? "third") AS coalesce1,
+ (undefined ?? "second" ?? "third") AS coalesce2,
+ ("first" ?? undefined ?? "third") AS coalesce3
+     
+-- *** Type checking functions ***
+
+SELECT
+ IS_ARRAY(6) AS isArray1,		IS_ARRAY([6]) AS isArray2,
+ IS_BOOL(6) AS isBool1,			IS_BOOL(false) AS isBool2,
+ IS_NULL(6) AS isNull1,			IS_NULL(null) AS isNull2,
+ IS_OBJECT("hello") AS IsObj1,	IS_OBJECT({"word": "hello"}) AS isObj2
+
+-- *** String concatenation operator ***
+
+SELECT
+ "Hello" || " " || "World" AS stringConcat
+
+-- *** String functions ***
+
+SELECT
+ CONCAT('A', 'b', 'c', 'd')	AS strConcat,       CONTAINS('Abcdef', 'cde')	AS strContains,
+ STARTSWITH('Abcdef', 'Ab')	AS strStartsWith,   ENDSWITH('Abcdef', 'cdef')	AS strEndsWith,
+ INDEX_OF('Abcdef', 'de')	AS strIndexOf1,     INDEX_OF('Abcdef', 'df')	AS strIndexOf2,
+ LEFT('Abcdef', 3)			AS strLeft,         RIGHT('Abcdef', 3)			AS strRight,
+ LTRIM('  Abcdef  ')    	AS strLtrim,        RTRIM('  Abcdef')			AS strRtrim,
+ SUBSTRING('Abcdef', 2, 3)	AS strSubstring,    LENGTH('Abcdef')			AS strLength,
+ LOWER('Abcdef')			AS strLower,        UPPER('Abcdef')			    AS strUpper
+
+-- *** Regular expressions ***
+
+SELECT
+ REGEXMATCH('abcd', 'ABC', '')      AS strRegexNoModifiers, 
+ REGEXMATCH('abcd', 'ABC', 'i')     AS strRegexCaseInsensitive, 
+ REGEXMATCH('abcd', 'ab.', '')      AS strRegexWildcardCharacter,
+ REGEXMATCH('abcd', 'ab c', 'x')    AS strRegexIgnoreWhiteSpace, 
+ REGEXMATCH('abcd', 'aB c', 'ix')   AS strRegexCaseInsensitiveAndIgnoreWhiteSpace 
+
+-- *** StringToXxx functions ***
+
+SELECT 
+    StringToArray('[]') AS a1, 
+    StringToArray("[1,2,3]") AS a2,
+    StringToArray("[\"str\",2,3]") AS a3,
+    StringToArray('[["5","6","7"],["8"],["9"]]') AS a4,
+    StringToArray('[1,2,3, "[4,5,6]",[7,8]]') AS a5
+
+SELECT 
+    StringToObject("{}") AS obj1, 
+    StringToObject('{"A":[1,2,3]}') AS obj2,
+    StringToObject('{"B":[{"b1":[5,6,7]},{"b2":8},{"b3":9}]}') AS obj3, 
+    StringToObject("{\"C\":[{\"c1\":[5,6,7]},{\"c2\":8},{\"c3\":9}]}") AS obj4
+    
+SELECT 
+    StringToBoolean("true") AS b1, 
+    StringToBoolean("    false") AS b2,
+    StringToBoolean("false    ") AS b3
+
+SELECT 
+    StringToNull("null") AS n1, 
+    StringToNull("  null ") AS n2,
+    IS_NULL(StringToNull("null   ")) AS n3
+
+SELECT 
+    StringToNumber("1.000000") AS num1, 
+    StringToNumber("3.14") AS num2,
+    StringToNumber("   60   ") AS num3, 
+    StringToNumber("-1.79769e+308") AS num4
+
+SELECT 
+    ToString(1.0000) AS str1, 
+    ToString("Hello World") AS str2, 
+    ToString(NaN) AS str3, 
+    ToString(Infinity) AS str4,
+    ToString(IS_STRING(ToString(undefined))) AS str5, 
+    ToString(0.1234) AS str6, 
+    ToString(false) AS str7, 
+    ToString(undefined) AS str8
+    
+-- *** Date/time functions ***
+
+SELECT
+    DateTimeAdd('mm', 1, '2022-07-09T23:20:13.4575530Z')    AS addOneMonth,
+    DateTimeAdd('hh', -2, '2022-07-09T23:20:13.4575530Z')   AS subtractTwoHours,
+    DateTimeBin('2021-06-28T17:24:29.2991234Z', 'hour')     AS getBinByHour,
+    DateTimeDiff(
+        'day',
+        '2022-01-01T01:02:03.1234527Z',
+        '2022-01-03T01:02:03.1234567Z')                     AS differenceInDays,
+    DateTimeFromParts(2020, 9, 4)                           AS dateTimeFromParts1,
+    DateTimeFromParts(2020, 9, 4, 10, 52, 12, 3456789)      AS dateTimeFromParts2,
+    DateTimePart('month', '2022-04-02T03:04:05.6789123Z')   AS monthValue,
+    DateTimeToTicks('2022-07-09T03:04:05.6789123Z')         AS dateTime2Ticks,       -- tick = one hundred nanoseconds (one ten-millionth of a second)
+    DateTimeToTimestamp('2022-07-09T03:04:05.6789123Z')     AS dateTime2Timestamp,   -- UNIX epoch = number of milliseconds exlapsed since Jan 1, 1970
+    TicksToDateTime(16573358456789124)                      AS ticks2DateTime,
+    TimestampToDateTime(1657335845678)                      AS timestamp2DateTime,
+    GetCurrentDateTime()                                    AS currentUtcDateTime,
+    GetCurrentTicks()                                       AS currentUtcTicks,
+    GetCurrentTimestamp()                                   AS currentUtcTimestamp
+
+-- *** Array functions ***
+
+SELECT
+ ARRAY_CONCAT(["A", "B"], ["1", "2"], ["#"])	AS arrConcat,
+ ARRAY_CONTAINS(["1A", "1B", "1C"], "1B")		AS arrContains,
+ ARRAY_LENGTH(["1A", "1B", "1C"])				AS arrLength,
+ ARRAY_SLICE(["1A", "1B", "1C", "1D"], 1, 2)	AS arrSlice
